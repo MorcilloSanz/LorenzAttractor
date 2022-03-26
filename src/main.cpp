@@ -303,7 +303,7 @@ int main() {
             ImGui::SameLine();
             ImGui::Text("rho: %.3f", rho);
             ImGui::SameLine();
-            ImGui::Text("betha: %.3f", beta);
+            ImGui::Text("beta: %.3f", beta);
             ImGui::Image((void*)(intptr_t)my_image_texture, ImVec2(my_image_width, my_image_height));
 
             ImGui::EndGroup();
