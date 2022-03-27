@@ -216,7 +216,7 @@ int main() {
     glm::mat4 view = glm::lookAt(glm::vec3(0, 0, 1), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
     
     model = glm::rotate(model, glm::radians(-10.f), glm::vec3(0, 1.0f, 0));
-    model = glm::translate(model, glm::vec3(0.12, -0.10, 0));
+    model = glm::translate(model, glm::vec3(0.12, -0.11, 0));
     model = glm::scale(model, glm::vec3(0.008));
     
     glm::mat4 mvp = proj * view * model;
@@ -299,11 +299,14 @@ int main() {
             ImGui::BeginGroup();
             ImGui::TextColored(ImColor(200, 0, 255), "Lorenz system:");
 
-            ImGui::Text("sigma: %.3f", sigma);
+            std::string sigmaString = "sigma: " + std::to_string(sigma);
+            ImGui::Text(sigmaString.c_str());
             ImGui::SameLine();
-            ImGui::Text("rho: %.3f", rho);
+            std::string rhoString = "rho: " + std::to_string(rho);
+            ImGui::Text(rhoString.c_str());
             ImGui::SameLine();
-            ImGui::Text("beta: %.3f", beta);
+            std::string betaString = "beta: " + std::to_string(beta);
+            ImGui::Text(betaString.c_str());
             ImGui::Image((void*)(intptr_t)my_image_texture, ImVec2(my_image_width, my_image_height));
 
             ImGui::EndGroup();
