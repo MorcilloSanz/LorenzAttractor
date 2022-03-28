@@ -64,8 +64,6 @@ float distance = DISTANCE;
 void solveDynamicLorenz(int buffer, float sigma, float rho, float beta, float dt) {
     if (numVertices >= MAX_ITERATIONS)
         return;
-    // Origin
-    
     // Equations
     float dx = sigma * (y - x) * dt;
     float dy = (x * (rho - z) - y) * dt;
