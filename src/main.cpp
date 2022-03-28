@@ -2,8 +2,7 @@
 #include <vector>
 #include <fstream>
 #include <string>
-#include <thread>
-#include <chrono>
+#include <algorithm>
 
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -38,7 +37,7 @@ const char* vertexShaderSource = "#version 330 core\n"
 
 const char* fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
-"uniform vec2 screenResolution;"
+"uniform vec2 screenResolution;\n"
 "void main()\n"
 "{\n"
 "   FragColor = vec4(gl_FragCoord.x / screenResolution.x, gl_FragCoord.y / screenResolution.y, 1, 1.0);\n"
@@ -49,19 +48,24 @@ const unsigned int SCR_HEIGHT = 720;
 unsigned int width = SCR_WIDTH, height = SCR_HEIGHT;
 
 const unsigned int MAX_ITERATIONS = 50500;
-const float rho = 28.0f, sigma = 10.0, beta = 8 / 3, dt = 0.003;
+const float RHO = 28.0f, SIGMA = 10.f, BETA = 8 / 3;
+float rho = RHO, sigma = SIGMA, beta = BETA, dt = 0.003;
 std::vector<float> xBuffer, yBuffer, zBuffer;
 
-float distance = 1.0f;
+const float X = 2, Y = 1, Z = 1;
+float x = X, y = Y, z = Z;
+std::vector<float> vertices;
 unsigned int numVertices = 0;
+
 glm::mat4 model(1.0f);
+const float DISTANCE = 1.0f;
+float distance = DISTANCE;
 
 void solveDynamicLorenz(int buffer, float sigma, float rho, float beta, float dt) {
     if (numVertices >= MAX_ITERATIONS)
         return;
     // Origin
-    static float x = 2, y = 1, z = 1;
-    static std::vector<float> vertices;
+    
     // Equations
     float dx = sigma * (y - x) * dt;
     float dy = (x * (rho - z) - y) * dt;
@@ -79,6 +83,23 @@ void solveDynamicLorenz(int buffer, float sigma, float rho, float beta, float dt
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     // Increase numVertices
     numVertices++;
+}
+
+void resetBuffers(int vbo) {
+    // Set all vertices to 0
+    std::fill(vertices.begin(), vertices.end(), 0);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    void* ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    memcpy(ptr, &vertices[0], sizeof(float) * vertices.size());
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // Clear CPU buffer
+    vertices.clear();
+    numVertices = 0;
+    // Set Attractor to origin
+    x = X;
+    y = Y;
+    z = Z;
 }
 
 bool LoadTextureFromFile(const char* filename, GLuint* out_texture, int* out_width, int* out_height) {
@@ -216,7 +237,7 @@ int main() {
     glm::mat4 view = glm::lookAt(glm::vec3(0, 0, 1), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
     
     model = glm::rotate(model, glm::radians(-10.f), glm::vec3(0, 1.0f, 0));
-    model = glm::translate(model, glm::vec3(0.12, -0.11, 0));
+    model = glm::translate(model, glm::vec3(0.135, -0.11, 0));
     model = glm::scale(model, glm::vec3(0.008));
     
     glm::mat4 mvp = proj * view * model;
@@ -244,7 +265,7 @@ int main() {
         glUseProgram(shaderProgram);
 
         // View matrix
-        glm::mat4 view = glm::lookAt(glm::vec3(0, 0, distance), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
+        view = glm::lookAt(glm::vec3(0, 0, distance), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
 
         // Model matrix
         static float angleX = 0, angleY = 0, angleZ = 0, rotationSpeed = 1.f;
@@ -253,7 +274,7 @@ int main() {
         model = glm::rotate(model, glm::radians(rotationSpeed * angleZ), glm::vec3(0.0f, 0.0f, 1.0f));
 
         // MVP matrix
-        glm::mat4 mvp = proj * view * model;
+        mvp = proj * view * model;
         int location = glGetUniformLocation(shaderProgram, "mvp");
         glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mvp));
 
@@ -299,14 +320,11 @@ int main() {
             ImGui::BeginGroup();
             ImGui::TextColored(ImColor(200, 0, 255), "Lorenz system:");
 
-            std::string sigmaString = "sigma: " + std::to_string(sigma);
-            ImGui::Text(sigmaString.c_str());
+            ImGui::Text("sigma=%.2f", sigma);
             ImGui::SameLine();
-            std::string rhoString = "rho: " + std::to_string(rho);
-            ImGui::Text(rhoString.c_str());
+            ImGui::Text("rho=%.2f", rho);
             ImGui::SameLine();
-            std::string betaString = "beta: " + std::to_string(beta);
-            ImGui::Text(betaString.c_str());
+            ImGui::Text("beta=%.2f", beta);
             ImGui::Image((void*)(intptr_t)my_image_texture, ImVec2(my_image_width, my_image_height));
 
             ImGui::EndGroup();
@@ -325,6 +343,47 @@ int main() {
             ImGui::Text(pointsString.c_str());
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::EndGroup();
+
+            ImGui::End();
+        }
+        // System params
+        {
+            ImGui::Begin("ODE System");
+
+            ImGui::TextColored(ImColor(200, 0, 255), "System params:");
+
+            static float _sigma = sigma, _rho = rho, _beta = beta;
+            ImGui::SliderFloat("sigma", &_sigma, 0.1f, 100.f);
+            ImGui::SliderFloat("rho", &_rho, 0.1f, 100.f);
+            ImGui::SliderFloat("beta", &_beta, 0.1f, 100.f);
+
+            ImGui::Separator();
+
+            if (ImGui::Button("Restart")) {
+                // System params
+                sigma = _sigma;
+                rho = _rho;
+                beta = _beta;
+                // Reset GPU and CPU buffers
+                resetBuffers(VBO);
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("Reset")) {
+                // System params
+                sigma = _sigma = SIGMA;
+                rho = _rho = RHO;
+                beta = _beta = BETA;
+                // Linear transforms
+                model = glm::mat4(1.0f);
+                model = glm::rotate(model, glm::radians(-10.f), glm::vec3(0, 1.0f, 0));
+                model = glm::translate(model, glm::vec3(0.12, -0.11, 0));
+                model = glm::scale(model, glm::vec3(0.008));
+                distance = DISTANCE;
+                // Reset GPU and CPU buffers
+                resetBuffers(VBO);
+            }
 
             ImGui::End();
         }
