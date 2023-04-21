@@ -4,9 +4,13 @@ The Lorenz attractor is a strange attractor living in 3D space that relates thre
 
 The model is a system of three ordinary differential equations now known as the Lorenz equations:
 
-![alt text](https://github.com/MorcilloSanz/LorenzAttractor/blob/main/img/lorenzSystem.png)
+$$\frac{dx}{dt} = \sigma(y - x)$$
 
-One normally assumes that the parameters σ, ρ and β are positive. Lorenz used the values σ = 10, β = 8/3 and ρ = 28. The system exhibits chaotic behavior for these (and nearby) values
+$$\frac{dy}{dt} = x(\rho - z) - y$$
+
+$$\frac{dz}{dt} = xy - \beta z$$
+
+One normally assumes that the parameters $\sigma$, $\rho$ and $\beta$ are positive. Lorenz used the values $\sigma = 10$, $\beta = 8/3$ and $\rho = 28$. The system exhibits chaotic behavior for these (and nearby) values
 
 [Lorenz Attractor](https://mathworld.wolfram.com/LorenzAttractor.html)
 [Lorenz System](https://en.wikipedia.org/wiki/Lorenz_system)
